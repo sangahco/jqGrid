@@ -160,7 +160,7 @@ addSubGrid : function( pos, sind ) {
 					case "json":
 					$.ajax($.extend({
 						type:ts.p.mtype,
-						url: ts.p.subGridUrl,
+						url: $.isFunction(ts.p.subGridUrl) ? ts.p.subGridUrl.call(ts, dp) : ts.p.subGridUrl,
 						dataType:ts.p.subgridtype,
 						data: $.isFunction(ts.p.serializeSubGridData)? ts.p.serializeSubGridData.call(ts, dp) : dp,
 						complete: function(sxml) {
@@ -190,6 +190,9 @@ addSubGrid : function( pos, sind ) {
 		}
 		while(i < len) {
 			if($(ts.rows[i]).hasClass('jqgrow')) {
+				if(ts.p.scroll) {
+					$(ts.rows[i].cells[pos]).unbind('click');
+				}
 				$(ts.rows[i].cells[pos]).bind('click', function() {
 					var tr = $(this).parent("tr")[0];
 					r = tr.nextSibling;

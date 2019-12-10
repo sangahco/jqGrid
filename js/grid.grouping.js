@@ -227,11 +227,9 @@ $.jgrid.extend({
 				if(grp.showSummaryOnHide) {
 					if(r){
 						while(r) {
-							if($(r).hasClass('jqfoot') ) {
-								var lv = parseInt($(r).attr("jqfootlevel"),10);
-								if(  lv <= num) {
-									break;
-								}
+							itemGroupingLevel = getGroupingLevelFromClass(r.className);
+							if (itemGroupingLevel !== undefined && itemGroupingLevel <= num) {
+								break;
 							}
 							$(r).hide();
 							r = r.nextSibling;
@@ -367,8 +365,9 @@ $.jgrid.extend({
 				}
 				return str;
 			}
-			var sumreverse = $.makeArray(grp.groupSummary);
+			var sumreverse = $.makeArray(grp.groupSummary), mul;
 			sumreverse.reverse();
+			mul = $t.p.multiselect ? " colspan=\"2\"" : "";
 			$.each(grp.groups,function(i,n){
 				if(grp._locgr) {
 					if( !(n.startRow +n.cnt > (page-1)*rn && n.startRow < page*rn)) {
@@ -392,16 +391,16 @@ $.jgrid.extend({
 					gv = n.displayValue;
 				}
 				if(grp.groupSummaryPos[n.idx] === 'header')  {
-					str += "<tr id=\""+hid+"\"" +(grp.groupCollapse && n.idx>0 ? " style=\"display:none;\" " : " ") + "role=\"row\" class= \"ui-widget-content jqgroup ui-row-"+$t.p.direction+" "+clid+"\"><td style=\"padding-left:"+(n.idx * 12) + "px;"+"\">"+icon+$.jgrid.template(grp.groupText[n.idx], gv, n.cnt, n.summary)+"</td>";
-					str += buildSummaryTd(i, n.idx-1, grp.groups, 1);
+					str += "<tr id=\""+hid+"\"" +(grp.groupCollapse && n.idx>0 ? " style=\"display:none;\" " : " ") + "role=\"row\" class= \"ui-widget-content jqgroup ui-row-"+$t.p.direction+" "+clid+"\"><td style=\"padding-left:"+(n.idx * 12) + "px;"+"\"" + mul +">"+icon+$.jgrid.template(grp.groupText[n.idx], gv, n.cnt, n.summary)+"</td>";
+					str += buildSummaryTd(i, 0, grp.groups, grp.groupColumnShow[n.idx] === false ? (mul ==="" ? 2 : 3) : ((mul ==="") ? 1 : 2) );
 					str += "</tr>";
 				} else {
-					str += "<tr id=\""+hid+"\"" +(grp.groupCollapse && n.idx>0 ? " style=\"display:none;\" " : " ") + "role=\"row\" class= \"ui-widget-content jqgroup ui-row-"+$t.p.direction+" "+clid+"\"><td style=\"padding-left:"+(n.idx * 12) + "px;"+"\" colspan=\""+colspans+"\">"+icon+$.jgrid.template(grp.groupText[n.idx], gv, n.cnt, n.summary)+"</td></tr>";
+					str += "<tr id=\""+hid+"\"" +(grp.groupCollapse && n.idx>0 ? " style=\"display:none;\" " : " ") + "role=\"row\" class= \"ui-widget-content jqgroup ui-row-"+$t.p.direction+" "+clid+"\"><td style=\"padding-left:"+(n.idx * 12) + "px;"+"\" colspan=\""+(grp.groupColumnShow[n.idx] === false ? colspans-1 : colspans)+"\">"+icon+$.jgrid.template(grp.groupText[n.idx], gv, n.cnt, n.summary)+"</td></tr>";
 				}
 				var leaf = len-1 === n.idx; 
 				if( leaf ) {
 					var gg = grp.groups[i+1], kk, ik, offset = 0, sgr = n.startRow,
-					end = gg !== undefined ?  grp.groups[i+1].startRow : grdata.length;
+					end = gg !== undefined ?  gg.startRow : grp.groups[i].startRow + grp.groups[i].cnt;
 					if(grp._locgr) {
 						offset = (page-1)*rn;
 						if(offset > n.startRow) {
@@ -449,7 +448,7 @@ $.jgrid.extend({
 			}
 			var grp = $t.p.groupingView;
 			$t.p.grouping = true;
-
+			grp._locgr = false;
 			//Set default, in case visibilityOnNextGrouping is undefined 
 			if (grp.visibiltyOnNextGrouping === undefined) {
 				grp.visibiltyOnNextGrouping = [];

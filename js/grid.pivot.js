@@ -59,6 +59,7 @@ $.jgrid.extend({
 		pivotrows =[],
 		summaries = [],
 		member=[],
+		labels=[],
 		groupOptions = {
 			grouping : true,
 			groupingView :  {
@@ -162,13 +163,16 @@ $.jgrid.extend({
 			 */
 			function agregateFunc ( row, aggr, value, curr) {
 				// default is sum
-				var arrln = aggr.length, i, label, j, jv;
+				var arrln = aggr.length, i, label, j, jv, mainval="",swapvals=[];
 				if($.isArray(value)) {
 					jv = value.length;
+					swapvals = value;
 				} else {
 					jv = 1;
+					swapvals[0]=value;
 				}
 				member = [];
+				labels = [];
 				member.root = 0;
 				for(j=0;j<jv;j++) {
 					var  tmpmember = [], vl;
@@ -176,15 +180,22 @@ $.jgrid.extend({
 						if(value == null) {
 							label = $.trim(aggr[i].member)+"_"+aggr[i].aggregator;
 							vl = label;
+							swapvals[0]= vl;
 						} else {
 							vl = value[j].replace(/\s+/g, '');
 							try {
-								label = (arrln === 1 ? vl : vl+"_"+aggr[i].aggregator+"_"+i);
+								label = (arrln === 1 ? mainval + vl : mainval + vl+"_"+aggr[i].aggregator+"_" + String(i));
 							} catch(e) {}
 						}
+						label = !isNaN(parseInt(label,10)) ? label + " " : label;
 						curr[label] =  tmpmember[label] = calculation( aggr[i].aggregator, curr[label], aggr[i].member, row);
+						if(j<=1 && vl !==  '_r_Totals' && mainval === "") { // this does not fix full the problem
+							mainval = vl;
+						}
 					}
-					member[vl] = tmpmember;
+					//vl = !isNaN(parseInt(vl,10)) ? vl + " " : vl;
+					member[label] = tmpmember;
+					labels[label] = swapvals[j];
 				}
 				return curr;
 			}
@@ -204,6 +215,9 @@ $.jgrid.extend({
 			var colc;
 			for(i = 0; i< xlen; i++) {
 				colc = {name:o.xDimension[i].dataName, frozen: o.frozenStaticCols};
+				if(o.xDimension[i].isGroupField == null) {
+					o.xDimension[i].isGroupField =  true;
+				}
 				colc = $.extend(true, colc, o.xDimension[i]);
 				columns.push( colc );
 			}
@@ -274,28 +288,30 @@ $.jgrid.extend({
 				// to make later the columns 
 				// 
 				for (kk in member) {
-					if(kj === 0) {
-						if (!tree.children||tree.children === undefined){
-							tree = { text: kk, level : 0, children: [] };
-						}
-						current = tree.children;
-					} else {
-						existing = null;
-						for (i=0; i < current.length; i++) {
-							if (current[i].text === kk) {
+					if(member.hasOwnProperty( kk )) {
+						if(kj === 0) {
+							if (!tree.children||tree.children === undefined){
+								tree = { text: kk, level : 0, children: [], label: kk  };
+							}
+							current = tree.children;
+						} else {
+							existing = null;
+							for (i=0; i < current.length; i++) {
+								if (current[i].text === kk) {
 								//current[i].fields=member[kk];
-								existing = current[i];
-								break;
+									existing = current[i];
+									break;
+								}
+							}
+							if (existing) {
+								current = existing.children;
+							} else {
+								current.push({ children: [], text: kk, level: kj,  fields: member[kk], label: labels[kk] });
+								current = current[current.length - 1].children;
 							}
 						}
-						if (existing) {
-							current = existing.children;
-						} else {
-							current.push({ children: [], text: kk, level: kj,  fields: member[kk] });
-							current = current[current.length - 1].children;
-						}
+						kj++;
 					}
-					kj++;
 				}
 				r++;
 			}
@@ -328,12 +344,21 @@ $.jgrid.extend({
 								if(lastval[items.level] !== items.text && items.children.length && items.text !== '_r_Totals') {
 									if(items.level>0) {
 										headers[items.level-1].groupHeaders.push({
-											titleText: items.text
+											titleText: items.label,
+											numberOfColumns : 0
 										});
-										var collen = headers[items.level-1].groupHeaders.length,
-										colpos = collen === 1 ? swaplen : initColLen+(collen-1)*aggrlen;
-										headers[items.level-1].groupHeaders[collen-1].startColumnName = columns[colpos].name;
-										headers[items.level-1].groupHeaders[collen-1].numberOfColumns = columns.length - colpos;
+										var collen = headers[items.level-1].groupHeaders.length-1,
+										colpos = collen === 0 ? swaplen : initColLen+aggrlen;
+										if(items.level-1=== (o.rowTotals ? 1 : 0)) {
+											if(collen>0) {
+												var l1 = headers[items.level-1].groupHeaders[collen-1].numberOfColumns;
+												if(l1) {
+													colpos = l1 + 1 + o.aggregates.length;
+												}
+											}
+										}
+										headers[items.level-1].groupHeaders[collen].startColumnName = columns[colpos].name;
+										headers[items.level-1].groupHeaders[collen].numberOfColumns = columns.length - colpos;
 										initColLen = columns.length;
 									}
 								}
@@ -364,28 +389,30 @@ $.jgrid.extend({
 							if(items.level >0){
 								j=0;
 								for(l in items.fields) {
-									col = {};
-									for(k in o.aggregates[j]) {
-										if(o.aggregates[j].hasOwnProperty(k)) {
-											switch( k ) {
-												case 'member':
-												case 'label':
-												case 'aggregator':
-													break;
-												default:
-													col[k] = o.aggregates[j][k];
+									if(items.fields.hasOwnProperty( l )) {
+										col = {};
+										for(k in o.aggregates[j]) {
+											if(o.aggregates[j].hasOwnProperty(k)) {
+												switch( k ) {
+													case 'member':
+													case 'label':
+													case 'aggregator':
+														break;
+													default:
+														col[k] = o.aggregates[j][k];
+												}
 											}
+										}	
+										if(aggrlen>1) {
+											col.name = l;
+											col.label = o.aggregates[j].label || items.label;
+										} else {
+											col.name = items.text;
+											col.label = items.text==='_r_Totals' ? o.rowTotalsText : items.label;
 										}
+										columns.push (col);
+										j++;
 									}
-									if(aggrlen>1) {
-										col.name = l;
-										col.label = o.aggregates[j].label || l;
-									} else {
-										col.name = items.text;
-										col.label = items.text==='_r_Totals' ? o.rowTotalsText : items.text;
-									}
-									columns.push (col);
-									j++;
 								}
 							}
 						}
@@ -393,7 +420,7 @@ $.jgrid.extend({
 				}
 			}
 
-			list(tree, 0);
+			list( tree );
 			var nm;
 			// loop again trougth the pivot rows in order to build grand total 
 			if(o.colTotals) {
@@ -412,9 +439,11 @@ $.jgrid.extend({
 			// based on xDimension  levels build grouping 
 			if( groupfields > 0) {
 				for(i=0;i<groupfields;i++) {
-					groupOptions.groupingView.groupField[i] = columns[i].name;
-					groupOptions.groupingView.groupSummary[i] = o.groupSummary;
-					groupOptions.groupingView.groupSummaryPos[i] = o.groupSummaryPos;
+					if(columns[i].isGroupField) {
+						groupOptions.groupingView.groupField.push(columns[i].name);
+						groupOptions.groupingView.groupSummary.push(o.groupSummary);
+						groupOptions.groupingView.groupSummaryPos.push(o.groupSummaryPos);
+					}
 				}
 			} else {
 				// no grouping is needed
@@ -437,7 +466,7 @@ $.jgrid.extend({
 				for(i=0; i< pivotGrid.groupOptions.groupingView.groupField.length; i++) {
 					query.orderBy(pivotGrid.groupOptions.groupingView.groupField[i], "a", 'text', '');
 				}
-				jQuery($t).jqGrid($.extend({
+				jQuery($t).jqGrid($.extend(true, {
 					datastr: $.extend(query.select(),footerrow ? {userdata:pivotGrid.summary} : {}),
 					datatype: "jsonstring",
 					footerrow : footerrow,
@@ -445,7 +474,7 @@ $.jgrid.extend({
 					colModel: pivotGrid.colModel,
 					viewrecords: true,
 					sortname: pivotOpt.xDimension[0].dataName // ?????
-				}, gridOpt || {}, pivotGrid.groupOptions));
+				}, pivotGrid.groupOptions, gridOpt || {}));
 				var gHead = pivotGrid.groupHeaders;
 				if(gHead.length) {
 					for( i = 0;i < gHead.length ; i++) {
