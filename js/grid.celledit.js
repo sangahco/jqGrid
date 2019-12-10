@@ -3,12 +3,12 @@
 (function($){
 /*
 **
- * jqGrid extension for cellediting Grid Data
- * Tony Tomov tony@trirand.com
- * http://trirand.com/blog/ 
- * Dual licensed under the MIT and GPL licenses:
- * http://www.opensource.org/licenses/mit-license.php
- * http://www.gnu.org/licenses/gpl-2.0.html
+	* jqGrid extension for cellediting Grid Data
+	* Tony Tomov tony@trirand.com
+	* http://trirand.com/blog/ 
+	* Dual licensed under the MIT and GPL licenses:
+	* http://www.opensource.org/licenses/mit-license.php
+	* http://www.gnu.org/licenses/gpl-2.0.html
 **/ 
 /**
  * all events and options here are aded anonynous and not in the base grid
@@ -94,8 +94,8 @@ $.jgrid.extend({
 							$($t).jqGrid("restoreCell",iRow,iCol);
 						}
 					} //ESC
-					if (e.keyCode === 13) {
-						$($t).jqGrid("saveCell",iRow,iCol);
+					if (e.keyCode === 13 && (e.target.tagName === undefined || e.target.tagName != 'TEXTAREA')) {
+						$($t).jqGrid("saveCell",iRow,iCol);//Enter
 						// Prevent default action
 						return false;
 					} //Enter
@@ -353,7 +353,11 @@ $.jgrid.extend({
 			if (!$t.grid || $t.p.cellEdit !== true ) {return;}
 			// trick to process keydown on non input elements
 			$t.p.knv = $t.p.id + "_kn";
-			var selection = $("<div style='position:fixed;top:-1000000px;width:1px;height:1px;' tabindex='0'><div tabindex='-1' style='width:1px;height:1px;' id='"+$t.p.knv+"'></div></div>"),
+			
+			//var selection = $("<div style='position:fixed;top:-1000000px;width:1px;height:1px;' tabindex='0'><div tabindex='-1' style='width:1px;height:1px;' id='"+$t.p.knv+"'></div></div>"),
+			// TODO: [fix] on cell selection the window scroll to the top
+			var selection = $("<div style='position:fixed;top:0;left:0;width:1px;height:1px;' tabindex='0'><div tabindex='-1' style='width:1px;height:1px;' id='"+$t.p.knv+"'></div></div>"),
+			
 			i, kdir;
 			function scrollGrid(iR, iC, tp){
 				if (tp.substr(0,1)=='v') {
@@ -423,8 +427,12 @@ $.jgrid.extend({
 							$($t).jqGrid("editCell",$t.p.iRow-1,$t.p.iCol,false);
 						}
 					break;
-					case 40 :
+					case 13:	// ENTER
+					case 40 :	// DOWN
 						if ($t.p.iRow+1 <=  $t.rows.length-1) {
+							var rec = $($t).jqGrid('getLocalRow', $t.p.selrow);
+							$($t).jqGrid("expandRow", rec);
+							$($t).jqGrid("expandNode", rec);
 							scrollGrid($t.p.iRow+1,$t.p.iCol,'vd');
 							$($t).jqGrid("editCell",$t.p.iRow+1,$t.p.iCol,false);
 						}
@@ -436,18 +444,19 @@ $.jgrid.extend({
 							$($t).jqGrid("editCell",$t.p.iRow, i,false);
 						}
 					break;
-					case 39 :
+					case 9 :	// TAB
+					case 39 :	// RIGHT
 						if ($t.p.iCol +1 <=  $t.p.colModel.length-1) {
 							i = findNextVisible($t.p.iCol+1,'rgt');
 							scrollGrid($t.p.iRow,i,'h');
 							$($t).jqGrid("editCell",$t.p.iRow,i,false);
 						}
 					break;
-					case 13:
-						if (parseInt($t.p.iCol,10)>=0 && parseInt($t.p.iRow,10)>=0) {
-							$($t).jqGrid("editCell",$t.p.iRow,$t.p.iCol,true);
-						}
-					break;
+//					case 13:
+//						if (parseInt($t.p.iCol,10)>=0 && parseInt($t.p.iRow,10)>=0) {
+//							$($t).jqGrid("editCell",$t.p.iRow,$t.p.iCol,true);
+//						}
+//					break;
 					default :
 						return true;
 				}

@@ -520,7 +520,23 @@ $.jgrid.extend({
 			groupHeaders: []
 		},o  || {});
 		return this.each(function(){
-			this.p.groupHeader = o;
+			// TODO added multiHeader
+			if( o.multiHeader ){
+				if( !this.p.groupHeader || !this.p.groupHeader.length ){
+					this.p.groupHeader = [];
+				}
+				var exists = false;
+				for(var i=0; i < this.p.groupHeader.length; i++ ){
+					if( this.p.groupHeader[i].multiHeader == o.multiHeader ){
+						exists = true;
+					}
+				}
+				if( !exists ){
+					this.p.groupHeader.push( o );
+				}
+			} else {
+				this.p.groupHeader = o;
+			}
 			var ts = this,
 			i, cmi, skip = 0, $tr, $colHeader, th, $th, thStyle,
 			iCol,
@@ -654,7 +670,7 @@ $.jgrid.extend({
 	setFrozenColumns : function () {
 		return this.each(function() {
 			if ( !this.grid ) {return;}
-			var $t = this, cm = $t.p.colModel,i=0, len = cm.length, maxfrozen = -1, frozen= false;
+			var $t = this, cm = $t.p.colModel,i=0, f=0, len = cm.length, maxfrozen = -1, frozen= false;
 			// TODO treeGrid and grouping  Support
 			if($t.p.subGrid === true || $t.p.treeGrid === true || $t.p.cellEdit === true || $t.p.sortable || $t.p.scroll || $t.p.grouping )
 			{
@@ -671,6 +687,9 @@ $.jgrid.extend({
 				{
 					frozen = true;
 					maxfrozen = i;
+					if(cm[i].frozen2 === true){
+						f++;
+					}
 				} else {
 					break;
 				}
@@ -712,7 +731,16 @@ $.jgrid.extend({
 						fdel = maxfrozen;
 					}
 					$("tr.jqg-second-row-header", htbl).each(function(){
-						$("th:gt("+fdel+")",this).remove();
+						if(f>0){//setGroupHeaders
+							$("th:gt("+f+")",this).remove();
+						}else{
+							$("th:gt("+fdel+")",this).remove();
+						}
+					});
+
+					$("tr.jqg-third-row-header", htbl).each(function(){
+						var f_remove = $("th",this).length - 3;
+						$("th:gt("+f_remove+")",this).remove();
 					});
 				} else {
 					$("tr",htbl).each(function(){

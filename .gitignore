@@ -3,3 +3,5 @@ yuicompressor.jar
 dist
 nbproject
 .gradle
+.idea
+*.iml

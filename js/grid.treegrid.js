@@ -94,8 +94,15 @@ $.jgrid.extend({
 								$($t).jqGrid("collapseRow",$t.p.data[pos]);
 								$($t).jqGrid("collapseNode",$t.p.data[pos]);
 							} else {
-								$($t).jqGrid("expandRow",$t.p.data[pos]);
-								$($t).jqGrid("expandNode",$t.p.data[pos]);
+								/* TODO [Add] onExpandRow event! */
+								var result = true;
+								if ($.isFunction($t.p.onExpandRow)) {
+									result = $t.p.onExpandRow.call($t, ind2, $t.p.data[pos], e); 
+								}
+								if(result){
+									$($t).jqGrid("expandRow",$t.p.data[pos]);
+									$($t).jqGrid("expandNode",$t.p.data[pos]);
+								}
 							}
 						}
 						return false;
@@ -666,10 +673,11 @@ $.jgrid.extend({
 					data[right] = maxright + 2;
 				}
 			}
-			if( parentid === null || $($t).jqGrid("isNodeLoaded",parentdata) || leaf ) {
+			// TODO [fix]
+			//if( parentid === null || $($t).jqGrid("isNodeLoaded",parentdata) || leaf ) {
 					$($t).jqGrid('addRowData', nodeid, data, method, rowind);
 					$($t).jqGrid('setTreeNode', i, len);
-			}
+			//}
 			if(parentdata && !parentdata[expanded] && expandData) {
 				$($t.rows[prow])
 					.find("div.treeclick")

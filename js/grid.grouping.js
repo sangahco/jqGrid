@@ -85,7 +85,20 @@ $.jgrid.extend({
 			for(i=0;i<grlen;i++) {
 				fieldName = grp.groupField[i];
 				displayName = grp.displayField[i];
-				v = record[fieldName];
+
+				// TODO fix in order to use the formatter in colModel
+				var col = null;
+				$.each($t.p.colModel, function (ii,n){
+					if(grp.groupField[i] === n.name ) {
+						col = ii;
+						return false;
+					}
+				});
+				if( $(rData[0]).length && $(rData[0])[0].tagName === "TR" ){
+					v = $t.formatter( $(rData[0]).attr('id'), record[fieldName], col, record );
+				} else {
+					v = record[fieldName];
+				}
 				displayValue = displayName == null ? null : record[displayName];
 
 				if( displayValue == null ) {
@@ -255,13 +268,22 @@ $.jgrid.extend({
 				toEnd++;
 				clid = $t.p.id+"ghead_"+n.idx;
 				hid = clid+"_"+i;
-				icon = "<span style='cursor:pointer;' class='ui-icon "+pmrtl+"' onclick=\"jQuery('#"+$.jgrid.jqID($t.p.id)+"').jqGrid('groupingToggle','"+hid+"');return false;\"></span>";
+				// TODO added onclick on tr and removed on icon so all the row is clickable
+				//icon = "<span style='cursor:pointer;' class='ui-icon "+pmrtl+"' onclick=\"jQuery('#"+$.jgrid.jqID($t.p.id)+"').jqGrid('groupingToggle','"+hid+"');return false;\"></span>";
+				icon = "<span style='cursor:pointer;' class='ui-icon "+pmrtl+"' ></span>";
 				try {
-					gv = $t.formatter(hid, n.displayValue, cp[n.idx], n.value );
+					// TODO the formatter is already executed in groupingPrepare function
+					throw new Error();
+					//gv = $t.formatter(hid, n.displayValue, cp[n.idx], n.value );
 				} catch (egv) {
 					gv = n.displayValue;
 				}
-				str += "<tr id=\""+hid+"\" role=\"row\" class= \"ui-widget-content jqgroup ui-row-"+$t.p.direction+" "+clid+"\"><td style=\"padding-left:"+(n.idx * 12) + "px;"+"\" colspan=\""+colspans+"\">"+icon+$.jgrid.template(grp.groupText[n.idx], gv, n.cnt, n.summary)+"</td></tr>";
+				str += "<tr style='cursor:pointer;' onclick=\"jQuery('#"+$.jgrid.jqID($t.p.id)+"').jqGrid('groupingToggle','"+hid+"');return false;\" " +
+						"id=\""+hid+"\" role=\"row\" class= \"ui-widget-content jqgroup ui-row-"+$t.p.direction+" "+clid+"\"><td style=\"padding-left:"+(n.idx * 12) + "px;"+"\" colspan=\""+colspans+"\">" +
+						icon +
+						$.jgrid.template(grp.groupText[n.idx], gv, n.cnt, n.summary) +
+						"</td></tr>";
+
 				var leaf = len-1 === n.idx; 
 				if( leaf ) {
 					var gg = grp.groups[i+1], k, kk, ik;

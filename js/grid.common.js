@@ -2,12 +2,12 @@
 /*global jQuery */
 (function($){
 /*
- * jqGrid common function
- * Tony Tomov tony@trirand.com
- * http://trirand.com/blog/ 
- * Dual licensed under the MIT and GPL licenses:
- * http://www.opensource.org/licenses/mit-license.php
- * http://www.gnu.org/licenses/gpl-2.0.html
+	* jqGrid common function
+	* Tony Tomov tony@trirand.com
+	* http://trirand.com/blog/ 
+	* Dual licensed under the MIT and GPL licenses:
+	* http://www.opensource.org/licenses/mit-license.php
+	* http://www.gnu.org/licenses/gpl-2.0.html
 */
 "use strict";
 $.extend($.jgrid,{
@@ -474,6 +474,10 @@ $.extend($.jgrid,{
 					else { $.jgrid.info_dialog($.jgrid.errors.errcap,typeof e==="string"?e:e.message,$.jgrid.edit.bClose); }
 				}
 			break;
+		}
+		// TODO added event onCreateElement
+		if ( $t.p.onCreateElement && $.isFunction( $t.p.onCreateElement)) {
+			$t.p.onCreateElement.call( $t, elem, options );
 		}
 		return elem;
 	},
