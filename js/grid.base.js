@@ -2,12 +2,12 @@
 // @compilation_level SIMPLE_OPTIMIZATIONS
 
 /**
- * @license jqGrid  4.5.0 - jQuery Grid
+ * @license jqGrid  4.5.1 - jQuery Grid
  * Copyright (c) 2008, Tony Tomov, tony@trirand.com
  * Dual licensed under the MIT and GPL licenses
  * http://www.opensource.org/licenses/mit-license.php
  * http://www.gnu.org/licenses/gpl-2.0.html
- * Date: 2013-05-13
+ * Date: 2013-05-21
  */
 //jsHint options
 /*jshint evil:true, eqeqeq:false, eqnull:true, devel:true */
@@ -17,7 +17,7 @@
 "use strict";
 $.jgrid = $.jgrid || {};
 $.extend($.jgrid,{
-	version : "4.5.0",
+	version : "4.5.1",
 	htmlDecode : function(value){
 		if(value && (value==='&nbsp;' || value==='&#160;' || (value.length===1 && value.charCodeAt(0)===160))) { return "";}
 		return !value ? value : String(value).replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&quot;/g, '"').replace(/&amp;/g, "&");		
@@ -127,7 +127,7 @@ $.extend($.jgrid,{
 						if(dM !== -1 && dM < 12){date[k] = dM+1; ts.m = date[k];}
 					}
 					if(format[k] === 'F') {
-						dM = $.inArray(date[k],opts.monthNames);
+						dM = $.inArray(date[k],opts.monthNames,12);
 						if(dM !== -1 && dM > 11){date[k] = dM+1-12; ts.m = date[k];}
 					}
 					if(format[k] === 'a') {
@@ -2146,8 +2146,9 @@ $.fn.jqGrid = function( pin ) {
 			});
 			}
 		},
-		multiSort = function(iCol, reload, sorder) {
-			var splas, sort="", cm = ts.p.colModel, fs=false, ls, selTh = ts.grid.headers[iCol].el, so="";
+		multiSort = function(iCol, obj ) {
+			var splas, sort="", cm = ts.p.colModel, fs=false, ls, 
+					selTh = ts.p.frozenColumns ?  obj : ts.grid.headers[iCol].el, so="";
 			$("span.ui-grid-ico-sort",selTh).addClass('ui-state-disabled');
 			$(selTh).attr("aria-selected","false");
 
@@ -2190,7 +2191,7 @@ $.fn.jqGrid = function( pin ) {
 			sort = sort.substring(0, ls);
 			ts.p.sortname = sort;
 		},
-		sortData = function (index, idxcol,reload,sor){
+		sortData = function (index, idxcol,reload,sor, obj){
 			if(!ts.p.colModel[idxcol].sortable) { return; }
 			var so;
 			if(ts.p.savedRow.length > 0) {return;}
@@ -2203,20 +2204,27 @@ $.fn.jqGrid = function( pin ) {
 				ts.p.page = 1;
 			}
 			if(ts.p.multiSort) {
-				multiSort( idxcol, reload, so);
+				multiSort( idxcol, obj);
 			} else {
 				if(sor) {
 					if(ts.p.lastsort === idxcol && ts.p.sortorder === sor && !reload) { return; }
 					ts.p.sortorder = sor;
 				}
-				var previousSelectedTh = ts.grid.headers[ts.p.lastsort].el, newSelectedTh = ts.grid.headers[idxcol].el;
+				var previousSelectedTh = ts.grid.headers[ts.p.lastsort].el, newSelectedTh = ts.p.frozenColumns ?  obj : ts.grid.headers[idxcol].el;
 
 				$("span.ui-grid-ico-sort",previousSelectedTh).addClass('ui-state-disabled');
 				$(previousSelectedTh).attr("aria-selected","false");
+				if(ts.p.frozenColumns) {
+					ts.grid.fhDiv.find("span.ui-grid-ico-sort").addClass('ui-state-disabled');
+					ts.grid.fhDiv.find("th").attr("aria-selected","false");
+				}
 				$("span.ui-icon-"+ts.p.sortorder,newSelectedTh).removeClass('ui-state-disabled');
 				$(newSelectedTh).attr("aria-selected","true");
 				if(!ts.p.viewsortcols[0]) {
 					if(ts.p.lastsort !== idxcol) {
+						if(ts.p.frozenColumns){
+							ts.grid.fhDiv.find("span.s-ico").hide();
+						}
 						$("span.s-ico",previousSelectedTh).hide();
 						$("span.s-ico",newSelectedTh).show();
 					}
@@ -2573,9 +2581,21 @@ $.fn.jqGrid = function( pin ) {
 			if (!ts.p.viewsortcols[2]) { s = "th>div>span>span.ui-grid-ico-sort"; }
 			var t = $(e.target).closest(s);
 			if (t.length !== 1) { return; }
-			var ci = getColumnHeaderIndex(this);
+			var ci;
+			if(ts.p.frozenColumns) {
+				var tid =  $(this)[0].id.substring(5);
+				$(ts.p.colModel).each(function(i){
+					if (this.name === tid) {
+						ci = i;return false;
+					}
+				});
+			} else {
+				ci = getColumnHeaderIndex(this);
+			}
 			if (!ts.p.viewsortcols[2]) { r=true;d=t.attr("sort"); }
-			sortData( $('div',this)[0].id, ci, r, d);
+			if(ci != null){
+				sortData( $('div',this)[0].id, ci, r, d, this);
+			}
 			return false;
 		});
 		if (ts.p.sortable && $.fn.sortable) {

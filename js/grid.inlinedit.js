@@ -239,7 +239,7 @@ $.jgrid.extend({
 			}
 			if(tmp) {
 				tmp[opers.oper] = opers.editoper;
-				if (tmp[idname] === undefined) {
+				if (tmp[idname] === undefined || tmp[idname]==="") {
 					tmp[idname] = rowid;
 				} else if (ind.id !== $t.p.idPrefix + tmp[idname]) {
 					// rename rowid
@@ -446,7 +446,7 @@ $.jgrid.extend({
 		});
 	},
 	inlineNav : function (elem, o) {
-		o = $.extend({
+		o = $.extend(true,{
 			edit: true,
 			editicon: "ui-icon-pencil",
 			add: true,

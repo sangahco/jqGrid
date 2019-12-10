@@ -344,10 +344,17 @@ $.jgrid.extend({
 				top=parseInt(top,10) + 18;
 
 				var fs =  $('.ui-jqgrid-view').css('font-size') || '11px';
-				var str = '<ul id="sopt_menu" class="ui-search-menu" role="menu" tabindex="0" style="font-size:'+fs+';left:'+left+'px;top:'+top+'px;">',				
-				cm = $t.p.colModel[parseInt( $(elem).attr("colindex") )],
+				var str = '<ul id="sopt_menu" class="ui-search-menu" role="menu" tabindex="0" style="font-size:'+fs+';left:'+left+'px;top:'+top+'px;">',
 				selected = $(elem).attr("soper"), selclass,
-				aoprs = [], i, ina, options = $.extend({}, cm.searchoptions);
+				aoprs = [], i, ina;
+				var i=0, nm =$(elem).attr("colname"),len = $t.p.colModel.length;
+				while(i<len) {
+					if($t.p.colModel[i].name === nm) {
+						break;
+					}
+					i++;
+				}
+				var cm = $t.p.colModel[i], options = $.extend({}, cm.searchoptions);
 				if(!options.sopt) {
 					options.sopt = [];
 					options.sopt[0]= cm.stype==='select' ?  'eq' : p.defaultSearch;
@@ -357,7 +364,7 @@ $.jgrid.extend({
 					ina = $.inArray(options.sopt[i],aoprs);
 					if(ina !== -1) {
 						selclass = selected === p.odata[ina].oper ? "ui-state-highlight" : "";
-						str += '<li class="ui-menu-item '+selclass+'" role="presentation"><a href="#" class="ui-corner-all g-menu-item" tabindex="0" role="menuitem" value="'+p.odata[ina].oper+'" oper="'+p.operands[p.odata[ina].oper]+'"><table cellspacing="0" cellpadding="0" border="0"><tr><td width="25px">'+p.operands[p.odata[ina].oper]+'</td><td>'+ p.odata[ina].text+'</td></tr></table></a></li>';
+						str += '<li class="ui-menu-item '+selclass+'" role="presentation"><a class="ui-corner-all g-menu-item" tabindex="0" role="menuitem" value="'+p.odata[ina].oper+'" oper="'+p.operands[p.odata[ina].oper]+'"><table cellspacing="0" cellpadding="0" border="0"><tr><td width="25px">'+p.operands[p.odata[ina].oper]+'</td><td>'+ p.odata[ina].text+'</td></tr></table></a></li>';
 					}
 				}
 				str += "</ul>";
@@ -383,7 +390,7 @@ $.jgrid.extend({
 			// create the row
 			var tr = $("<tr class='ui-search-toolbar' role='rowheader'></tr>");
 			var timeoutHnd;
-			$.each($t.p.colModel,function(colindex){
+			$.each($t.p.colModel,function(){
 				var cm=this, soptions, surl, self, select = "", sot="=", so,
 				th = $("<th role='columnheader' class='ui-state-default ui-th-column ui-th-"+$t.p.direction+"'></th>"),
 				thd = $("<div style='position:relative;height:100%;padding-right:0.3em;padding-left:0.3em;'></div>"),
@@ -402,7 +409,7 @@ $.jgrid.extend({
 							}
 						}
 						var st = soptions.searchtitle != null ? soptions.searchtitle : p.operandTitle;
-						select = "<a href='#' title='"+st+"' style='padding-right: 0.5em;' soper='"+so+"' class='soptclass' colindex='"+colindex+"'>"+sot+"</a>";
+						select = "<a title='"+st+"' style='padding-right: 0.5em;' soper='"+so+"' class='soptclass' colname='"+this.name+"'>"+sot+"</a>";
 					}
 					$("td:eq(0)",stbl).append(select);
 					switch (this.stype)
@@ -565,6 +572,12 @@ $.jgrid.extend({
 					left = ( offset.left ),
 					top = ( offset.top);
 					buildRuleMenu(this, left, top );
+					e.stopPropagation();
+				});
+				$("body").on('click', function(e){
+					if(e.target.className !== "soptclass") {
+						$("#sopt_menu").hide();
+					}
 				});
 			}
 			this.ftoolbar = true;
@@ -827,9 +840,14 @@ $.jgrid.extend({
 					$("tr.jqg-first-row-header, tr.jqg-third-row-header", htbl).each(function(){
 						$("th:gt("+maxfrozen+")",this).remove();
 					});
-					var swapfroz = -1, fdel = -1;
+					var swapfroz = -1, fdel = -1, cs, rs;
 					$("tr.jqg-second-row-header th", htbl).each(function(){
-						var cs= parseInt($(this).attr("colspan"),10);
+						cs= parseInt($(this).attr("colspan"),10);
+						rs= parseInt($(this).attr("rowspan"),10);
+						if(rs) {
+							swapfroz++;
+							fdel++;
+						}
 						if(cs) {
 							swapfroz = swapfroz+cs;
 							fdel++;
