@@ -4,17 +4,22 @@
  If the first column of the table contains checkboxes or
  radiobuttons then the jqGrid is made selectable.
 */
+/*jslint browser: true, devel: true, eqeq: true, evil: true, nomen: true, plusplus: true, regexp: true, unparam: true, todo: true, vars: true, white: true, maxerr: 999 */
+/*global jQuery */
 // Addition - selector can be a class or id
-function tableToGrid(selector, options) {
-jQuery(selector).each(function() {
-	if(this.grid) {return;} //Adedd from Tony Tomov
+(function($){
+"use strict";
+window.tableToGrid = function (selector, options) {
+$(selector).each(function() {
+	var self = this, $self = $(this);
+	if(self.grid) {return;} //Adedd from Tony Tomov
 	// This is a small "hack" to make the width of the jqGrid 100%
-	jQuery(this).width("99%");
-	var w = jQuery(this).width();
+	$self.width("99%");
+	var w = $self.width();
 
 	// Text whether we have single or multi select
-	var inputCheckbox = jQuery('tr td:first-child input[type=checkbox]:first', jQuery(this));
-	var inputRadio = jQuery('tr td:first-child input[type=radio]:first', jQuery(this));
+	var inputCheckbox = $('tr td:first-child input[type=checkbox]:first', $self);
+	var inputRadio = $('tr td:first-child input[type=radio]:first', $self);
 	var selectMultiple = inputCheckbox.length > 0;
 	var selectSingle = !selectMultiple && inputRadio.length > 0;
 	var selectable = selectMultiple || selectSingle;
@@ -23,7 +28,7 @@ jQuery(selector).each(function() {
 	// Build up the columnModel and the data
 	var colModel = [];
 	var colNames = [];
-	jQuery('th', jQuery(this)).each(function() {
+	$('th', $self).each(function() {
 		if (colModel.length === 0 && selectable) {
 			colModel.push({
 				name: '__selection__',
@@ -34,22 +39,22 @@ jQuery(selector).each(function() {
 			colNames.push('__selection__');
 		} else {
 			colModel.push({
-				name: jQuery(this).attr("id") || jQuery.trim(jQuery.jgrid.stripHtml(jQuery(this).html())).split(' ').join('_'),
-				index: jQuery(this).attr("id") || jQuery.trim(jQuery.jgrid.stripHtml(jQuery(this).html())).split(' ').join('_'),
-				width: jQuery(this).width() || 150
+				name: $(this).attr("id") || $.trim($.jgrid.stripHtml($(this).html())).split(' ').join('_'),
+				index: $(this).attr("id") || $.trim($.jgrid.stripHtml($(this).html())).split(' ').join('_'),
+				width: $(this).width() || 150
 			});
-			colNames.push(jQuery(this).html());
+			colNames.push($(this).html());
 		}
 	});
 	var data = [];
 	var rowIds = [];
 	var rowChecked = [];
-	jQuery('tbody > tr', jQuery(this)).each(function() {
+	$('tbody > tr', $self).each(function() {
 		var row = {};
 		var rowPos = 0;
-		jQuery('td', jQuery(this)).each(function() {
+		$('td', $(this)).each(function() {
 			if (rowPos === 0 && selectable) {
-				var input = jQuery('input', jQuery(this));
+				var input = $('input', $(this));
 				var rowId = input.attr("value");
 				rowIds.push(rowId || data.length);
 				if (input.is(":checked")) {
@@ -57,7 +62,7 @@ jQuery(selector).each(function() {
 				}
 				row[colModel[rowPos].name] = input.attr("value");
 			} else {
-				row[colModel[rowPos].name] = jQuery(this).html();
+				row[colModel[rowPos].name] = $(this).html();
 			}
 			rowPos++;
 		});
@@ -65,12 +70,9 @@ jQuery(selector).each(function() {
 	});
 
 	// Clear the original HTML table
-	jQuery(this).empty();
+	$self.empty();
 
-	// Mark it as jqGrid
-	jQuery(this).addClass("scroll");
-
-	jQuery(this).jqGrid(jQuery.extend({
+	$self.jqGrid($.extend({
 		datatype: "local",
 		width: w,
 		colNames: colNames,
@@ -81,9 +83,9 @@ jQuery(selector).each(function() {
 	}, options || {}));
 
 	// Add data
-	var a;
+	var a, id;
 	for (a = 0; a < data.length; a++) {
-		var id = null;
+		id = null;
 		if (rowIds.length > 0) {
 			id = rowIds[a];
 			if (id && id.replace) {
@@ -93,14 +95,15 @@ jQuery(selector).each(function() {
 			}
 		}
 		if (id === null) {
-			id = a + 1;
+			id = $.jgrid.randId();
 		}
-		jQuery(this).jqGrid("addRowData",id, data[a]);
+		$self.jqGrid("addRowData",id, data[a]);
 	}
 
 	// Set the selection
 	for (a = 0; a < rowChecked.length; a++) {
-		jQuery(this).jqGrid("setSelection",rowChecked[a]);
+		$self.jqGrid("setSelection",rowChecked[a]);
 	}
 });
 };
+}(jQuery));

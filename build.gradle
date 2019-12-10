@@ -7,15 +7,15 @@ repositories {
 }
 
 dependencies {
-    jscompiler 'com.google.javascript:closure-compiler:v20141120'
+    jscompiler 'com.google.javascript:closure-compiler:v20150126'
 }
 
 def srcdir = new File('js')
 def distdir = new File('dist')
 
-def jqGridFile = new File(distdir, 'jquery.jqGrid.js')
+def jqGridFile = new File(distdir, 'jquery.jqGrid.src.js')
 def jqGridMinFile = new File(distdir, 'jquery.jqGrid.min.js')
-def jqGridSrcMapFile = new File(distdir, 'jquery.jqGrid.map.js')
+def jqGridSrcMapFile = new File(distdir, 'jquery.jqGrid.min.map')
 
 task init() {
     description = "Create distribution directory: $distdir.absolutePath"
@@ -31,7 +31,7 @@ task init() {
 
 task jqgrid(dependsOn: 'init') {
     description = "Concatinate all javascript files into one javascript file: $jqGridFile.absolutePath"
-    def files = fileTree(dir: srcdir, include: '*.js', exclude: 'jquery.jqGrid.js')
+    def files = fileTree(dir: srcdir, include: '*.js', exclude: 'jquery.jqGrid.*.js')
     inputs.file files
     outputs.file jqGridFile
 
@@ -44,6 +44,7 @@ task jqgrid(dependsOn: 'init') {
 
 task 'jqgrid-min'(dependsOn: 'jqgrid') {
     description = "Minimize $jqGridFile.absolutePath to $jqGridMinFile.absolutePath"
+	def outputMapFile = new File(srcdir, 'jquery.jqGrid.min.map')
     inputs.file jqGridFile
     outputs.file jqGridMinFile
 
@@ -54,6 +55,9 @@ task 'jqgrid-min'(dependsOn: 'jqgrid') {
                 ant.file(name: jqGridFile.name)
             }
         }
+		def fileContent = jqGridSrcMapFile.getText()
+		fileContent = fileContent.replace('"sources":["dist/jquery.jqGrid.src.js"],', '"sources":["jquery.jqGrid.src.js"],')
+		outputMapFile.write(fileContent)
     }
 }
 
@@ -83,9 +87,20 @@ task i18n(type: Copy, dependsOn: 'init') {
     def i18nDir = new File(distdir, 'i18n')
     description = "Copy all i18n files to $i18nDir.absolutePath"
 
+	duplicatesStrategy = 'exclude'
     from new File(srcdir, 'i18n')
     into i18nDir
     include('grid.locale-*.js')
+}
+
+task copySrcAndMin(type: Copy, dependsOn: 'jqgrid-min') {
+    description = "Copy $jqGridFile and $jqGridMinFile files to $srcdir.absolutePath"
+
+	delete new File(srcdir, 'jquery.jqGrid.src.js'), new File(srcdir, 'jquery.jqGrid.min.js')
+	
+    from distdir
+    into srcdir
+    include('jquery.jqGrid*.js')
 }
 
 task clean() {
@@ -95,14 +110,15 @@ task clean() {
         if (distdir.exists()) {
             distdir.deleteDir()
         }
+		delete new File(srcdir, 'jquery.jqGrid.min.map')
     }
 }
 
-task build(dependsOn: ['jqgrid-min', 'min-files', 'i18n']) {
+task build(dependsOn: ['jqgrid-min', 'i18n', 'copySrcAndMin']) {
     description = "Build the entire distribution"
 }
 
 
 task wrap(type: Wrapper) {
-    gradleVersion = '1.0-milestone-8a'
+    gradleVersion = '2.3'
 }

@@ -1,4 +1,5 @@
 /*jshint evil:true, eqeqeq:false, eqnull:true, devel:true */
+/*jslint browser: true, devel: true, eqeq: true, evil: true, nomen: true, plusplus: true, regexp: true, unparam: true, todo: true, vars: true, white: true, maxerr: 999 */
 /*global jQuery */
 (function($){
 /*
@@ -11,53 +12,55 @@
 	* depends on jQuery UI 
 **/
 "use strict";
-if ($.jgrid.msie && $.jgrid.msiever()===8) {
+var jgrid = $.jgrid, $UiMultiselect = $.ui != null ? $.ui.multiselect : null, jqID = jgrid.jqID;
+if (jgrid.msie && jgrid.msiever()===8) {
 	$.expr[":"].hidden = function(elem) {
 		return elem.offsetWidth === 0 || elem.offsetHeight === 0 ||
 			elem.style.display === "none";
 	};
 }
 // requiere load multiselect before grid
-$.jgrid._multiselect = false;
+jgrid._multiselect = false;
 if($.ui) {
-	if ($.ui.multiselect ) {
-		if($.ui.multiselect.prototype._setSelected) {
-			var setSelected = $.ui.multiselect.prototype._setSelected;
-			$.ui.multiselect.prototype._setSelected = function(item,selected) {
-				var ret = setSelected.call(this,item,selected);
-				if (selected && this.selectedList) {
-					var elt = this.element;
-					this.selectedList.find('li').each(function() {
-						if ($(this).data('optionLink')) {
-							$(this).data('optionLink').remove().appendTo(elt);
+	if ($UiMultiselect ) {
+		if($UiMultiselect.prototype._setSelected) {
+			var setSelected = $UiMultiselect.prototype._setSelected;
+			$UiMultiselect.prototype._setSelected = function(item,selected) {
+				var self = this, ret = setSelected.call(self,item,selected);
+				if (selected && self.selectedList) {
+					var elt = self.element;
+					self.selectedList.find('li').each(function() {
+						if ($(self).data('optionLink')) {
+							$(self).data('optionLink').remove().appendTo(elt);
 						}
 					});
 				}
 				return ret;
 			};
 		}
-		if($.ui.multiselect.prototype.destroy) {
-			$.ui.multiselect.prototype.destroy = function() {
-				this.element.show();
-				this.container.remove();
+		if($UiMultiselect.prototype.destroy) {
+			$UiMultiselect.prototype.destroy = function() {
+				var self = this;
+				self.element.show();
+				self.container.remove();
 				if ($.Widget === undefined) {
-					$.widget.prototype.destroy.apply(this, arguments);
+					$.widget.prototype.destroy.apply(self, arguments);
 				} else {
-					$.Widget.prototype.destroy.apply(this, arguments);
+					$.Widget.prototype.destroy.apply(self, arguments);
 				}
 			};
 		}
-		$.jgrid._multiselect = true;
+		jgrid._multiselect = true;
 	}
 }
-		
-$.jgrid.extend({
+        
+jgrid.extend({
 	sortableColumns : function (tblrow)
 	{
 		return this.each(function (){
-			var ts = this, tid= $.jgrid.jqID( ts.p.id );
-			function start() {ts.p.disableClick = true;}
-			var sortable_opts = {
+			var ts = this, p = ts.p, tid = jqID(p.id);
+			function start() {p.disableClick = true;}
+			var sortableOpts = {
 				"tolerance" : "pointer",
 				"axis" : "x",
 				"scrollSensitivity": "1",
@@ -69,66 +72,61 @@ $.jgrid.extend({
 						.removeClass("ui-sortable-helper")[0];
 						return el;
 					},
-					update: function(self, p) {
-						p.height(self.currentItem.innerHeight() - parseInt(self.currentItem.css('paddingTop')||0, 10) - parseInt(self.currentItem.css('paddingBottom')||0, 10));
-						p.width(self.currentItem.innerWidth() - parseInt(self.currentItem.css('paddingLeft')||0, 10) - parseInt(self.currentItem.css('paddingRight')||0, 10));
+					update: function(self, o) {
+						o.height(self.currentItem.innerHeight() - parseInt(self.currentItem.css('paddingTop')||0, 10) - parseInt(self.currentItem.css('paddingBottom')||0, 10));
+						o.width(self.currentItem.innerWidth() - parseInt(self.currentItem.css('paddingLeft')||0, 10) - parseInt(self.currentItem.css('paddingRight')||0, 10));
 					}
 				},
 				"update": function(event, ui) {
-					var p = $(ui.item).parent(),
-					th = $(">th", p),
-					colModel = ts.p.colModel,
-					cmMap = {}, tid= ts.p.id+"_";
+					var th = $(">th", $(ui.item).parent()),	colModel = p.colModel, cmMap = {}, tid1 = p.id + "_", permutation = [];
 					$.each(colModel, function(i) { cmMap[this.name]=i; });
-					var permutation = [];
 					th.each(function() {
-						var id = $(">div", this).get(0).id.replace(/^jqgh_/, "").replace(tid,"");
+						var id = $(">div", this).get(0).id.replace(/^jqgh_/, "").replace(tid1,"");
 							if (cmMap.hasOwnProperty(id)) {
 								permutation.push(cmMap[id]);
 							}
 					});
 	
 					$(ts).jqGrid("remapColumns",permutation, true, true);
-					if ($.isFunction(ts.p.sortable.update)) {
-						ts.p.sortable.update(permutation);
+					if ($.isFunction(p.sortable.update)) {
+						p.sortable.update(permutation);
 					}
-					setTimeout(function(){ts.p.disableClick=false;}, 50);
+					setTimeout(function(){p.disableClick=false;}, 50);
 				}
 			};
-			if (ts.p.sortable.options) {
-				$.extend(sortable_opts, ts.p.sortable.options);
-			} else if ($.isFunction(ts.p.sortable)) {
-				ts.p.sortable = { "update" : ts.p.sortable };
+			if (p.sortable.options) {
+				$.extend(sortableOpts, p.sortable.options);
+			} else if ($.isFunction(p.sortable)) {
+				p.sortable = { "update" : p.sortable };
 			}
-			if (sortable_opts.start) {
-				var s = sortable_opts.start;
-				sortable_opts.start = function(e,ui) {
+			if (sortableOpts.start) {
+				var s = sortableOpts.start;
+				sortableOpts.start = function(e,ui) {
 					start();
 					s.call(this,e,ui);
 				};
 			} else {
-				sortable_opts.start = start;
+				sortableOpts.start = start;
 			}
-			if (ts.p.sortable.exclude) {
-				sortable_opts.items += ":not("+ts.p.sortable.exclude+")";
+			if (p.sortable.exclude) {
+				sortableOpts.items += ":not("+p.sortable.exclude+")";
 			}
-			var $e = tblrow.sortable(sortable_opts), dataObj = $e.data("sortable") || $e.data("uiSortable");
+			var $e = tblrow.sortable(sortableOpts), dataObj = $e.data("sortable") || $e.data("uiSortable") || $e.data("ui-sortable");
 			if (dataObj != null) {
-				dataObj.data("sortable").floating = true;
+				dataObj.floating = true;
 			}
 		});
 	},
     columnChooser : function(opts) {
-		var self = this, selector, select, colMap = {}, fixedCols = [], dopts, mopts, $dialogContent, multiselectData, listHeight,
-			colModel = self.jqGrid("getGridParam", "colModel"),
-			colNames = self.jqGrid("getGridParam", "colNames"),
+		var $self = this, self = $self[0], p = self.p, selector, select, colMap = {}, fixedCols = [], dopts, mopts, $dialogContent, multiselectData, listHeight,
+			colModel = p.colModel, colNames = p.colNames,
 			getMultiselectWidgetData = function ($elem) {
-				return ($.ui.multiselect.prototype && $elem.data($.ui.multiselect.prototype.widgetFullName || $.ui.multiselect.prototype.widgetName)) ||
+				return ($UiMultiselect && $UiMultiselect.prototype && $elem.data($UiMultiselect.prototype.widgetFullName || $UiMultiselect.prototype.widgetName)) ||
 					$elem.data("ui-multiselect") || $elem.data("multiselect");
 			};
 
-		if ($("#colchooser_" + $.jgrid.jqID(self[0].p.id)).length) { return; }
-		selector = $('<div id="colchooser_'+self[0].p.id+'" style="position:relative;overflow:hidden"><div><select multiple="multiple"></select></div></div>');
+		if ($("#colchooser_" + jqID(p.id)).length) { return; }
+		selector = $('<div id="colchooser_'+p.id+'" style="position:relative;overflow:hidden"><div><select multiple="multiple"></select></div></div>');
 		select = $('select', selector);
 
 		function insert(perm,i,v) {
@@ -157,7 +155,7 @@ $.jgrid.extend({
 			width : 400,
 			height : 240,
 			classname : null,
-			done : function(perm) { if (perm) { self.jqGrid("remapColumns", perm, true); } },
+			done : function(perm) { if (perm) { $self.jqGrid("remapColumns", perm, true); } },
 			/* msel is either the name of a ui widget class that
 			   extends a multiselect, or a function that supports
 			   creating a multiselect object (with no argument,
@@ -220,9 +218,9 @@ $.jgrid.extend({
 				var perm = [];
 				$('option',select).each(function() {
 					if ($(this).is("[selected]")) {
-						self.jqGrid("showCol", colModel[this.value].name);
+						$self.jqGrid("showCol", colModel[this.value].name);
 					} else {
-						self.jqGrid("hideCol", colModel[this.value].name);
+						$self.jqGrid("hideCol", colModel[this.value].name);
 					}
 				});
 				
@@ -234,9 +232,9 @@ $.jgrid.extend({
 					perm = insert(perm,ti,ti);
 				});
 				if (opts.done) {
-					opts.done.call(self, perm);
+					opts.done.call($self, perm);
 				}
-				self.jqGrid("setGridWidth", self[0].p.tblwidth, self[0].p.shrinkToFit);
+				$self.jqGrid("setGridWidth", p.tblwidth, p.shrinkToFit);
 			},
 			/* Function to cleanup the dialog, and select. Also calls the
 			   done function with no permutation (to indicate that the
@@ -246,20 +244,22 @@ $.jgrid.extend({
 				call(opts.msel, select, 'destroy');
 				selector.remove();
 				if (calldone && opts.done) {
-					opts.done.call(self);
+					opts.done.call($self);
 				}
 			},
 			msel_opts : {}
-		}, $.jgrid.col, opts || {});
+		},
+		$self.jqGrid("getGridRes", "col"),
+		jgrid.col, opts || {});
 		if($.ui) {
-			if ($.ui.multiselect && $.ui.multiselect.defaults) {
-				if (!$.jgrid._multiselect) {
+			if ($UiMultiselect && $UiMultiselect.defaults) {
+				if (!jgrid._multiselect) {
 					// should be in language file
 					alert("Multiselect plugin loaded after jqGrid. Please load the plugin before the jqGrid!");
 					return;
 				}
 				// ??? the next line uses $.ui.multiselect.defaults which will be typically undefined
-				opts.msel_opts = $.extend($.ui.multiselect.defaults, opts.msel_opts);
+				opts.msel_opts = $.extend($UiMultiselect.defaults, opts.msel_opts);
 			}
 		}
 		if (opts.caption) {
@@ -289,46 +289,48 @@ $.jgrid.extend({
 			}
 
 			select.append("<option value='"+i+"' "+
-						  (this.hidden?"":"selected='selected'")+">"+$.jgrid.stripHtml(colNames[i])+"</option>");
+						  (this.hidden?"":"selected='selected'")+">"+jgrid.stripHtml(colNames[i])+"</option>");
 		});
 
-		dopts = $.isFunction(opts.dlog_opts) ? opts.dlog_opts.call(self, opts) : opts.dlog_opts;
+		dopts = $.isFunction(opts.dlog_opts) ? opts.dlog_opts.call($self, opts) : opts.dlog_opts;
 		call(opts.dlog, selector, dopts);
-		mopts = $.isFunction(opts.msel_opts) ? opts.msel_opts.call(self, opts) : opts.msel_opts;
+		mopts = $.isFunction(opts.msel_opts) ? opts.msel_opts.call($self, opts) : opts.msel_opts;
 		call(opts.msel, select, mopts);
 
 		// fix height of elements of the multiselect widget
-		$dialogContent = $("#colchooser_" + $.jgrid.jqID(self[0].p.id));
+		$dialogContent = $("#colchooser_" + jqID(p.id));
 
 		$dialogContent.css({ margin: "auto" });
 		$dialogContent.find(">div").css({ width: "100%", height: "100%", margin: "auto" });
 
 		multiselectData = getMultiselectWidgetData(select);
-		multiselectData.container.css({ width: "100%", height: "100%", margin: "auto" });
+		if (multiselectData) {
+			multiselectData.container.css({ width: "100%", height: "100%", margin: "auto" });
 
-		multiselectData.selectedContainer.css({ width: multiselectData.options.dividerLocation * 100 + "%", height: "100%", margin: "auto", boxSizing: "border-box" });
-		multiselectData.availableContainer.css({ width: (100 - multiselectData.options.dividerLocation * 100) + "%", height: "100%", margin: "auto", boxSizing: "border-box" });
+			multiselectData.selectedContainer.css({ width: multiselectData.options.dividerLocation * 100 + "%", height: "100%", margin: "auto", boxSizing: "border-box" });
+			multiselectData.availableContainer.css({ width: (100 - multiselectData.options.dividerLocation * 100) + "%", height: "100%", margin: "auto", boxSizing: "border-box" });
 
-		// set height for both selectedList and availableList
-		multiselectData.selectedList.css("height", "auto");
-		multiselectData.availableList.css("height", "auto");
-		listHeight = Math.max(multiselectData.selectedList.height(), multiselectData.availableList.height());
-		listHeight = Math.min(listHeight, $(window).height());
-		multiselectData.selectedList.css("height", listHeight);
-		multiselectData.availableList.css("height", listHeight);
+			// set height for both selectedList and availableList
+			multiselectData.selectedList.css("height", "auto");
+			multiselectData.availableList.css("height", "auto");
+			listHeight = Math.max(multiselectData.selectedList.height(), multiselectData.availableList.height());
+			listHeight = Math.min(listHeight, $(window).height());
+			multiselectData.selectedList.css("height", listHeight);
+			multiselectData.availableList.css("height", listHeight);
+		}
 	},
 	sortableRows : function (opts) {
 		// Can accept all sortable options and events
 		return this.each(function(){
-			var $t = this;
-			if(!$t.grid) { return; }
+			var $t = this, grid = $t.grid, p = $t.p;
+			if(!grid) { return; }
 			// Currently we disable a treeGrid sortable
-			if($t.p.treeGrid) { return; }
+			if(p.treeGrid) { return; }
 			if($.fn.sortable) {
 				opts = $.extend({
 					"cursor":"move",
 					"axis" : "y",
-					"items": ".jqgrow",
+					"items": ">.jqgrow",
 					"delay": 150
 					},
 				opts || {});
@@ -343,13 +345,13 @@ $.jgrid.extend({
 				opts.start = function(ev,ui) {
 					$(ui.item).css("border-width","0");
 					$("td",ui.item).each(function(i){
-						this.style.width = $t.grid.cols[i].style.width;
+						this.style.width = grid.cols[i].style.width;
 					});
-					if($t.p.subGrid) {
+					if(p.subGrid) {
 						var subgid = $(ui.item).attr("id");
 						try {
 							$($t).jqGrid('collapseSubGridRow',subgid);
-						} catch (e) {}
+						} catch (ignore) {}
 					}
 					if(opts._start_) {
 						opts._start_.apply(this,[ev,ui]);
@@ -357,9 +359,9 @@ $.jgrid.extend({
 				};
 				opts.update = function (ev,ui) {
 					$(ui.item).css("border-width","");
-					if($t.p.rownumbers === true) {
+					if(p.rownumbers === true) {
 						$("td.jqgrid-rownum",$t.rows).each(function( i ){
-							$(this).html( i+1+(parseInt($t.p.page,10)-1)*parseInt($t.p.rowNum,10) );
+							$(this).html( i+1+(parseInt(p.page,10)-1)*parseInt(p.rowNum,10) );
 						});
 					}
 					if(opts._update_) {
@@ -367,15 +369,20 @@ $.jgrid.extend({
 					}
 				};
 				$("tbody:first",$t).sortable(opts);
-
-				// TODO this prevent select box from working correctly...
-				//$("tbody:first",$t).disableSelection();
+				if ($.isFunction($.fn.disableSelection)) {
+					// The method disableSelection exists starting with jQuery UI 1.6,
+					// but it's declared as deprecated since jQuery UI 1.9
+					// see http://jqueryui.com/upgrade-guide/1.9/#deprecated-disableselection-and-enableselection
+					// so we use disableSelection only if it exists
+					// TODO disabled by PMIS
+					// $("tbody:first>.jqgrow",$t).disableSelection();
+				}
 			}
 		});
 	},
 	gridDnD : function(opts) {
 		return this.each(function(){
-		var $t = this, i, cn;
+		var $t = this, j, cn;
 		if(!$t.grid) { return; }
 		// Currently we disable a treeGrid drag and drop
 		//if($t.p.treeGrid) { return; }
@@ -404,7 +411,7 @@ $.jgrid.extend({
 							subgid = $(ui.helper).attr("id");
 							try {
 								$($t).jqGrid('collapseSubGridRow',subgid);
-							} catch (e) {}
+							} catch (ignore) {}
 						}
 						// hack
 						// drag and drop does not insert tr in table, when the table has no rows
@@ -441,8 +448,8 @@ $.jgrid.extend({
 						if (!$(d).hasClass('jqgrow')) { return d;}
 						var tid = $(d).closest("table.ui-jqgrid-btable");
 						if(tid.length > 0 && $.data(tid[0],"dnd") !== undefined) {
-							var cn = $.data(tid[0],"dnd").connectWith;
-							return $.inArray('#'+$.jgrid.jqID(this.id),cn) !== -1 ? true : false;
+							var cn1 = $.data(tid[0],"dnd").connectWith;
+							return $.inArray('#'+jqID(this.id),cn1) !== -1 ? true : false;
 						}
 						return false;
 					},
@@ -451,28 +458,28 @@ $.jgrid.extend({
 						var accept = $(ui.draggable).attr("id");
 						var getdata = ui.draggable.parent().parent().jqGrid('getRowData',accept);
 						if(!opts.dropbyname) {
-							var j =0, tmpdata = {}, nm, key;
-							var dropmodel = $("#"+$.jgrid.jqID(this.id)).jqGrid('getGridParam','colModel');
+							var i =0, tmpdata = {}, nm, key;
+							var dropmodel = $("#"+jqID(this.id)).jqGrid('getGridParam','colModel');
 							try {
 								for (key in getdata) {
 									if (getdata.hasOwnProperty(key)) {
-									nm = dropmodel[j].name;
+									nm = dropmodel[i].name;
 									if( !(nm === 'cb' || nm === 'rn' || nm === 'subgrid' )) {
-										if(getdata.hasOwnProperty(key) && dropmodel[j]) {
+										if(getdata.hasOwnProperty(key) && dropmodel[i]) {
 											tmpdata[nm] = getdata[key];
 										}
 									}
-									j++;
+									i++;
 								}
 								}
 								getdata = tmpdata;
-							} catch (e) {}
+							} catch (ignore) {}
 						}
 						ui.helper.dropped = true;
 						if(opts.beforedrop && $.isFunction(opts.beforedrop) ) {
 							//parameters to this callback - event, element, data to be inserted, sender, reciever
 							// should return object which will be inserted into the reciever
-							var datatoinsert = opts.beforedrop.call(this,ev,ui,getdata,$('#'+$.jgrid.jqID($t.p.id)),$(this));
+							var datatoinsert = opts.beforedrop.call(this,ev,ui,getdata,$('#'+jqID($t.p.id)),$(this));
 							if (datatoinsert !== undefined && datatoinsert !== null && typeof datatoinsert === "object") { getdata = datatoinsert; }
 						}
 						if(ui.helper.dropped) {
@@ -486,7 +493,7 @@ $.jgrid.extend({
 								}
 							}
 							// NULL is interpreted as undefined while null as object
-							$("#"+$.jgrid.jqID(this.id)).jqGrid('addRowData',grid,getdata,opts.droppos);
+							$("#"+jqID(this.id)).jqGrid('addRowData',grid,getdata,opts.droppos);
 						}
 						if(opts.ondrop && $.isFunction(opts.ondrop) ) { opts.ondrop.call(this,ev,ui, getdata); }
 					}}, opts.drop_opts || {});
@@ -522,18 +529,18 @@ $.jgrid.extend({
 			updateDnD();
 		}
 		$t.p.jqgdnd = true;
-		for (i=0;i<opts.connectWith.length;i++){
-			cn =opts.connectWith[i];
+		for (j=0;j<opts.connectWith.length;j++){
+			cn =opts.connectWith[j];
 			$(cn).droppable($.isFunction(opts.drop) ? opts.drop.call($($t),opts) : opts.drop);
 		}
 		});
 	},
 	gridResize : function(opts) {
 		return this.each(function(){
-			var $t = this, gID = $.jgrid.jqID($t.p.id);
-			if(!$t.grid || !$.fn.resizable) { return; }
+			var $t = this, grid = $t.grid, p = $t.p, bdivSelector = p.gView+">.ui-jqgrid-bdiv", onlyHorizontal = false, sel, gridHeight = p.height;
+			if(!grid || !$.fn.resizable) { return; }
 			opts = $.extend({}, opts || {});
-			if(opts.alsoResize ) {
+			if(opts.alsoResize) {
 				opts._alsoResize_ = opts.alsoResize;
 				delete opts.alsoResize;
 			} else {
@@ -546,19 +553,48 @@ $.jgrid.extend({
 				opts._stop_ = false;
 			}
 			opts.stop = function (ev, ui) {
-				$($t).jqGrid('setGridParam',{height:$("#gview_"+gID+" .ui-jqgrid-bdiv").height()});
 				$($t).jqGrid('setGridWidth',ui.size.width,opts.shrinkToFit);
+				$(p.gView+">.ui-jqgrid-titlebar").css("width", "");
+				if (!onlyHorizontal) {
+					$($t).jqGrid('setGridParam',{height: $(bdivSelector).height()});
+				} else {
+					$(sel).each(function () {
+						$(this).css("height", "");
+					});
+					if (gridHeight === "auto" || gridHeight === "100%") {
+						$(grid.bDiv).css("height", gridHeight);
+					}
+				}
+				if ($t.fixScrollOffsetAndhBoxPadding) {
+					$t.fixScrollOffsetAndhBoxPadding();
+				}
 				if(opts._stop_) { opts._stop_.call($t,ev,ui); }
 			};
+			sel = bdivSelector;
+			if ((gridHeight === "auto" || gridHeight === "100%") && opts.handles === undefined) {
+				opts.handles = "e,w";
+			}
+			if (opts.handles) {
+				// test for "e, w"
+				var ar = $.map(String(opts.handles).split(","), function(item) {
+					return $.trim(item);
+				});
+				if (ar.length === 2 && ((ar[0] === "e" && ar[1] === "w") || (ar[1] === "e" && ar[1] === "w"))) {
+					sel = p.gView + ">div:not(.frozen-div)";
+					onlyHorizontal = true;
+					if (p.pager) {
+						sel += "," + p.pager;
+					}
+				}
+			}
 			if(opts._alsoResize_) {
-				var optstest = "{\'#gview_"+gID+" .ui-jqgrid-bdiv\':true,'" +opts._alsoResize_+"':true}";
-				opts.alsoResize = eval('('+optstest+')'); // the only way that I found to do this
+				opts.alsoResize = sel + "," + opts._alsoResize_;
 			} else {
-				opts.alsoResize = $(".ui-jqgrid-bdiv","#gview_"+gID);
+				opts.alsoResize = sel;
 			}
 			delete opts._alsoResize_;
-			$("#gbox_"+gID).resizable(opts);
+			$(p.gBox).resizable(opts);
 		});
 	}
 });
-})(jQuery);
+}(jQuery));

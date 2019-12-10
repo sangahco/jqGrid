@@ -1,4 +1,3 @@
-;(function($){
 /**
  * jqGrid Brazilian-Portuguese Translation
  * Sergio Righi sergio.righi@gmail.com
@@ -15,8 +14,15 @@
  * http://www.opensource.org/licenses/mit-license.php
  * http://www.gnu.org/licenses/gpl.html
 **/
-$.jgrid = $.jgrid || {};
-$.extend($.jgrid,{
+
+/*jslint white: true */
+/*global jQuery */
+(function($){
+"use strict";
+var locInfo = {
+	name: "Português (Brasil)",
+	nameEnglish: "Portuguese (Brazil)",
+	isRTL: false,
 	defaults : {
 		recordtext: "Ver {0} - {1} de {2}",
 	    emptyrecords: "Nenhum registro para visualizar",
@@ -27,7 +33,8 @@ $.extend($.jgrid,{
 		pgnext : "Next Page",
 		pgprev : "Previous Page",
 		pgrecs : "Records per Page",
-		showhide: "Toggle Expand Collapse Grid"
+		showhide: "Toggle Expand Collapse Grid",
+		savetext: "Salvando..."
 	},
 	search : {
 	    caption: "Procurar...",
@@ -74,13 +81,13 @@ $.extend($.jgrid,{
 	    bCancel: "Cancelar"
 	},
 	nav : {
-		edittext: " ",
+		edittext: "",
 	    edittitle: "Alterar registro selecionado",
-		addtext:" ",
+		addtext: "",
 	    addtitle: "Incluir novo registro",
-	    deltext: " ",
+	    deltext: "",
 	    deltitle: "Apagar registro selecionado",
-	    searchtext: " ",
+	    searchtext: "",
 	    searchtitle: "Procurar registros",
 	    refreshtext: "",
 	    refreshtitle: "Recarregando tabela",
@@ -114,31 +121,33 @@ $.extend($.jgrid,{
 				"Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 			],
 			AmPm : ["am","pm","AM","PM"],
-			S: function (j) {return j < 11 || j > 13 ? ['º', 'º', 'º', 'º'][Math.min((j - 1) % 10, 3)] : 'º'},
+			S: function (j) {return j < 11 || j > 13 ? ['º', 'º', 'º', 'º'][Math.min((j - 1) % 10, 3)] : 'º';},
 			srcformat: 'Y-m-d',
 			newformat: 'd/m/Y',
-			parseRe : /[#%\\\/:_;.,\t\s-]/,
 			masks : {
-	            ISO8601Long:"Y-m-d H:i:s",
-	            ISO8601Short:"Y-m-d",
 	            ShortDate: "n/j/Y",
 	            LongDate: "l, F d, Y",
 	            FullDateTime: "l, F d, Y g:i:s A",
 	            MonthDay: "F d",
 	            ShortTime: "g:i A",
 	            LongTime: "g:i:s A",
-	            SortableDateTime: "Y-m-d\\TH:i:s",
-	            UniversalSortableDateTime: "Y-m-d H:i:sO",
 	            YearMonth: "F, Y"
-	        },
-	        reformatAfterEdit : false,
-			userLocalTime : false
-		},
-		baseLinkUrl: '',
-		showAction: '',
-	    target: '',
-	    checkbox : {disabled:true},
-		idName : 'id'
+	        }
+		}
+	}
+};
+$.jgrid = $.jgrid || {};
+$.extend(true, $.jgrid, {
+	defaults: {
+		locale: "pt-BR"
+	},
+	locales: {
+		// In general the property name is free, but it's recommended to use the names based on
+		// http://www.iana.org/assignments/language-subtag-registry/language-subtag-registry
+		// http://rishida.net/utils/subtags/ and RFC 5646. See Appendix A of RFC 5646 for examples.
+		// One can use the lang attribute to specify language tags in HTML, and the xml:lang attribute for XML
+		// if it exists. See http://www.w3.org/International/articles/language-tags/#extlang
+		"pt-BR": locInfo
 	}
 });
-})(jQuery);
+}(jQuery));
