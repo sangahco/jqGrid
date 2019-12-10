@@ -119,7 +119,7 @@ $.jgrid.extend({
 						});
 						grp.groups[grp.counters[i].pos].summary = grp.counters[i].summary;
 					} else {
-						if( typeof v !== "object" && grp.lastvalues[i] !== v ) {
+						if (typeof v !== "object" && ($.isArray(grp.isInTheSameGroup) && $.isFunction(grp.isInTheSameGroup[i]) ? ! grp.isInTheSameGroup[i].call($t, grp.lastvalues[i], v, i, grp): grp.lastvalues[i] !== v)) {
 							// This record is not in same group as previous one
 							grp.groups.push({idx:i,dataIndex:fieldName,value:v, displayValue: displayValue, startRow: irow, cnt:1, summary : [] } );
 							grp.lastvalues[i] = v;
@@ -172,6 +172,7 @@ $.jgrid.extend({
 			var $t = this,
 			grp = $t.p.groupingView,
 			strpos = hid.split('_'),
+			uidpos,
 			//uid = hid.substring(0,strpos+1),
 			num = parseInt(strpos[strpos.length-2], 10);
 			strpos.splice(strpos.length-2,2);
@@ -199,7 +200,12 @@ $.jgrid.extend({
 				} else  {
 					if(r){
 						while(r) {
-							if( $(r).hasClass(uid+"_"+String(num) ) || $(r).hasClass(uid+"_"+String(num-1))) { break; }
+							uidpos = r.className.indexOf(uid);
+							if(uidpos !== -1) {
+								if( parseInt(r.className.substring(uidpos+uid.length + 1),10) <=  num) {
+									break;
+								}
+							}
 							$(r).hide();
 							r = r.nextSibling;
 						}
@@ -210,7 +216,12 @@ $.jgrid.extend({
 			} else {
 				if(r){
 					while(r) {
-						if($(r).hasClass(uid+"_"+String(num)) || $(r).hasClass(uid+"_"+String(num-1)) ) { break; }
+						uidpos = r.className.indexOf(uid);
+						if(uidpos !== -1) {
+							if( parseInt(r.className.substring(uidpos+uid.length + 1),10) <=  num) {
+								break;
+							}
+						}
 						$(r).show();
 						tspan = $(r).find("span."+"tree-wrap-"+$t.p.direction);
 						if( tspan && $(tspan).hasClass(plus) ) {
@@ -272,9 +283,10 @@ $.jgrid.extend({
 				//icon = "<span style='cursor:pointer;' class='ui-icon "+pmrtl+"' onclick=\"jQuery('#"+$.jgrid.jqID($t.p.id)+"').jqGrid('groupingToggle','"+hid+"');return false;\"></span>";
 				icon = "<span style='cursor:pointer;' class='ui-icon "+pmrtl+"' ></span>";
 				try {
-					// TODO the formatter is already executed in groupingPrepare function
-					throw new Error();
-					//gv = $t.formatter(hid, n.displayValue, cp[n.idx], n.value );
+					if ($.isArray(grp.formatDisplayField) && $.isFunction(grp.formatDisplayField[n.idx])) {
+						n.displayValue = grp.formatDisplayField[n.idx].call($t, n.displayValue, n.value, $t.p.colModel[cp[n.idx]], n.idx, grp);
+					}
+					gv = $t.formatter(hid, n.displayValue, cp[n.idx], n.value );
 				} catch (egv) {
 					gv = n.displayValue;
 				}

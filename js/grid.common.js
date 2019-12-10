@@ -241,7 +241,11 @@ $.extend($.jgrid,{
 			});
 		}
 		$("#closedialog", "#info_id").click(function(){
-			self.hideModal("#info_dialog",{jqm:jm});
+			self.hideModal("#info_dialog",{
+				jqm:jm,
+				onClose: $("#info_dialog").data("onClose") || mopt.onClose,
+				gb: $("#info_dialog").data("gbox") || mopt.gbox
+			});
 			return false;
 		});
 		$(".fm-button","#info_dialog").hover(
@@ -260,7 +264,8 @@ $.extend($.jgrid,{
 		if($.isFunction(mopt.afterOpen) ) { mopt.afterOpen(); }
 		try{ $("#info_dialog").focus();} catch (m){}
 	},
-	bindEv: function  (el, opt, $t) {
+	bindEv: function  (el, opt) {
+		var $t = this;
 		if($.isFunction(opt.dataInit)) {
 			opt.dataInit.call($t,el);
 		}
@@ -571,15 +576,15 @@ $.extend($.jgrid,{
 		}
 		return true;
 	},
-	checkValues : function(val, valref,g, customobject, nam) {
-		var edtrul,i, nm, dft, len, cm = g.p.colModel;
+	checkValues : function(val, valref, customobject, nam) {
+		var edtrul,i, nm, dft, len, g = this, cm = g.p.colModel;
 		if(customobject === undefined) {
 			if(typeof valref==='string'){
 				for( i =0, len=cm.length;i<len; i++){
 					if(cm[i].name===valref) {
 						edtrul = cm[i].editrules;
 						valref = i;
-						if(cm.formoptions != null) { nm = cm.formoptions.label; }
+						if(cm[i].formoptions != null) { nm = cm[i].formoptions.label; }
 						break;
 					}
 				}
@@ -591,7 +596,7 @@ $.extend($.jgrid,{
 			nm = nam===undefined ? "_" : nam;
 		}
 		if(edtrul) {
-			if(!nm) { nm = g.p.colNames[valref]; }
+			if(!nm) { nm = g.p.colNames != null ? g.p.colNames[valref] : cm[valref].label; }
 			if(edtrul.required === true) {
 				if( $.jgrid.isEmpty(val) )  { return [false,nm+": "+$.jgrid.edit.msg.required,""]; }
 			}
@@ -626,6 +631,9 @@ $.extend($.jgrid,{
 				if( !(rqfield === false && $.jgrid.isEmpty(val)) ) {
 					if(cm[valref].formatoptions && cm[valref].formatoptions.newformat) {
 						dft = cm[valref].formatoptions.newformat;
+						if( $.jgrid.formatter.date.masks.hasOwnProperty(dft) ) {
+							dft = $.jgrid.formatter.date.masks[dft];
+						}
 					} else {
 						dft = cm[valref].datefmt || "Y-m-d";
 					}

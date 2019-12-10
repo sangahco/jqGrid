@@ -83,7 +83,7 @@ $.jgrid.extend({
 					$t.p.beforeEditCell.call($t, $t.rows[iRow].id,nm,tmp,iRow,iCol);
 				}
 				$(cc).html("").append(elc).attr("tabindex","0");
-				$.jgrid.bindEv( elc, opt, $t);
+				$.jgrid.bindEv.call($t, elc, opt);
 				window.setTimeout(function () { $(elc).focus();},0);
 				$("input, select, textarea",cc).bind("keydown",function(e) {
 					if (e.keyCode === 27) {
@@ -191,7 +191,7 @@ $.jgrid.extend({
 						var vv = $t.p.beforeSaveCell.call($t, $t.rows[iRow].id,nm, v, iRow,iCol);
 						if (vv) {v = vv; v2=vv;}
 					}
-					var cv = $.jgrid.checkValues(v,iCol,$t);
+					var cv = $.jgrid.checkValues.call($t,v,iCol);
 					if(cv[0] === true) {
 						var addpost = $($t).triggerHandler("jqGridBeforeSubmitCell", [$t.rows[iRow].id, nm, v, iRow, iCol]) || {};
 						if ($.isFunction($t.p.beforeSubmitCell)) {
