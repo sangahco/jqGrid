@@ -309,7 +309,7 @@ $.extend($.jgrid,{
 				elem.type = "checkbox";
 				if( !options.value ) {
 					var vl1 = vl.toLowerCase();
-					if(vl1.search(/(false|0|no|off|undefined)/i)<0 && vl1!=="") {
+					if(vl1.search(/(false|f|0|no|n|off|undefined)/i)<0 && vl1!=="") {
 						elem.checked=true;
 						elem.defaultChecked=true;
 						elem.value = vl;
@@ -354,14 +354,12 @@ $.extend($.jgrid,{
 						data: $.isFunction(postData) ? postData.call($t, rowid, vl, String(options.name)) : postData,
 						context: {elem:elem, options:options, vl:vl},
 						success: function(data){
-							var a,	ovm = [], elem = this.elem, vl = this.vl,
+							var ovm = [], elem = this.elem, vl = this.vl,
 							options = $.extend({},this.options),
-							msl = options.multiple===true;
-							if($.isFunction(options.buildSelect)) {
-								var b = options.buildSelect.call($t,data);
-								a = $(b).html();
-							} else {
-								a = $(data).html();
+							msl = options.multiple===true,
+							a = $.isFunction(options.buildSelect) ? options.buildSelect.call($t,data) : data;
+							if(typeof a === 'string') {
+								a = $( $.trim( a ) ).html();
 							}
 							if(a) {
 								$(elem).append(a);
@@ -488,55 +486,45 @@ $.extend($.jgrid,{
 		// EXCEPT for centurial years which are not also divisible by 400.
 			return (((year % 4 === 0) && ( year % 100 !== 0 || (year % 400 === 0))) ? 29 : 28 );
 		},
-		daysArray = function(n) {
-			var i;
-			for (i = 1; i <= n; i++) {
-				this[i] = 31;
-				if (i==4 || i==6 || i==9 || i==11) {this[i] = 30;}
-				if (i==2) {this[i] = 29;}
-			}
-			return this;
-		};
-
-		var tsp = {}, sep;
+		tsp = {}, sep;
 		format = format.toLowerCase();
 		//we search for /,-,. for the date separator
-		if(format.indexOf("/") != -1) {
+		if(format.indexOf("/") !== -1) {
 			sep = "/";
-		} else if(format.indexOf("-") != -1) {
+		} else if(format.indexOf("-") !== -1) {
 			sep = "-";
-		} else if(format.indexOf(".") != -1) {
+		} else if(format.indexOf(".") !== -1) {
 			sep = ".";
 		} else {
 			sep = "/";
 		}
 		format = format.split(sep);
 		date = date.split(sep);
-		if (date.length != 3) { return false; }
+		if (date.length !== 3) { return false; }
 		var j=-1,yln, dln=-1, mln=-1, i;
 		for(i=0;i<format.length;i++){
 			var dv =  isNaN(date[i]) ? 0 : parseInt(date[i],10);
 			tsp[format[i]] = dv;
 			yln = format[i];
-			if(yln.indexOf("y") != -1) { j=i; }
-			if(yln.indexOf("m") != -1) { mln=i; }
-			if(yln.indexOf("d") != -1) { dln=i; }
+			if(yln.indexOf("y") !== -1) { j=i; }
+			if(yln.indexOf("m") !== -1) { mln=i; }
+			if(yln.indexOf("d") !== -1) { dln=i; }
 		}
-		if (format[j] == "y" || format[j] == "yyyy") {
+		if (format[j] === "y" || format[j] === "yyyy") {
 			yln=4;
-		} else if(format[j] =="yy"){
+		} else if(format[j] ==="yy"){
 			yln = 2;
 		} else {
 			yln = -1;
 		}
-		var daysInMonth = daysArray(12),
+		var daysInMonth = [0,31,29,31,30,31,30,31,31,30,31,30,31],
 		strDate;
 		if (j === -1) {
 			return false;
 		}
 			strDate = tsp[format[j]].toString();
-			if(yln == 2 && strDate.length == 1) {yln = 1;}
-			if (strDate.length != yln || (tsp[format[j]]===0 && date[j]!="00")){
+			if(yln === 2 && strDate.length === 1) {yln = 1;}
+			if (strDate.length !== yln || (tsp[format[j]]===0 && date[j]!=="00")){
 				return false;
 			}
 		if(mln === -1) {
@@ -564,7 +552,7 @@ $.extend($.jgrid,{
 	},
 	checkTime : function(time){
 	// checks only hh:ss (and optional am/pm)
-		var re = /^(\d{1,2}):(\d{2})([ap]m)?$/,regs;
+		var re = /^(\d{1,2}):(\d{2})([apAP][Mm])?$/,regs;
 		if(!$.jgrid.isEmpty(time))
 		{
 			regs = time.match(re);
@@ -584,19 +572,19 @@ $.extend($.jgrid,{
 		return true;
 	},
 	checkValues : function(val, valref,g, customobject, nam) {
-		var edtrul,i, nm, dft, len;
+		var edtrul,i, nm, dft, len, cm = g.p.colModel;
 		if(customobject === undefined) {
 			if(typeof valref==='string'){
-				for( i =0, len=g.p.colModel.length;i<len; i++){
-					if(g.p.colModel[i].name==valref) {
-						edtrul = g.p.colModel[i].editrules;
+				for( i =0, len=cm.length;i<len; i++){
+					if(cm[i].name===valref) {
+						edtrul = cm[i].editrules;
 						valref = i;
-						try { nm = g.p.colModel[i].formoptions.label; } catch (e) {}
+						if(cm.formoptions != null) { nm = cm.formoptions.label; }
 						break;
 					}
 				}
 			} else if(valref >=0) {
-				edtrul = g.p.colModel[valref].editrules;
+				edtrul = cm[valref].editrules;
 			}
 		} else {
 			edtrul = customobject;
@@ -636,10 +624,10 @@ $.extend($.jgrid,{
 			}
 			if(edtrul.date === true) {
 				if( !(rqfield === false && $.jgrid.isEmpty(val)) ) {
-					if(g.p.colModel[valref].formatoptions && g.p.colModel[valref].formatoptions.newformat) {
-						dft = g.p.colModel[valref].formatoptions.newformat;
+					if(cm[valref].formatoptions && cm[valref].formatoptions.newformat) {
+						dft = cm[valref].formatoptions.newformat;
 					} else {
-						dft = g.p.colModel[valref].datefmt || "Y-m-d";
+						dft = cm[valref].datefmt || "Y-m-d";
 					}
 					if(!$.jgrid.checkDate (dft, val)) { return [false,nm+": "+$.jgrid.edit.msg.date+" - "+dft,""]; }
 				}
@@ -658,7 +646,7 @@ $.extend($.jgrid,{
 			if(edtrul.custom === true) {
 				if( !(rqfield === false && $.jgrid.isEmpty(val)) ) {
 					if($.isFunction(edtrul.custom_func)) {
-						var ret = edtrul.custom_func.call(g,val,nm);
+						var ret = edtrul.custom_func.call(g,val,nm,valref);
 						return $.isArray(ret) ? ret : [false,$.jgrid.edit.msg.customarray,""];
 					}
 					return [false,$.jgrid.edit.msg.customfcheck,""];

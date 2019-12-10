@@ -359,7 +359,7 @@ $.jgrid.extend({
 			onBeforeInit = $.isFunction(rp_ge[$t.p.id].beforeInitData) ? rp_ge[$t.p.id].beforeInitData : false,
 			onInitializeForm = $.isFunction(rp_ge[$t.p.id].onInitializeForm) ? rp_ge[$t.p.id].onInitializeForm : false,
 			showFrm = true,
-			maxCols = 1, maxRows=0,	postdata, extpost, newData, diff, frmoper;
+			maxCols = 1, maxRows=0,	postdata, newData, diff, frmoper;
 			frmgr = $.jgrid.jqID(frmgr);
 			if (rowid === "new") {
 				rowid = "_empty";
@@ -405,7 +405,6 @@ $.jgrid.extend({
 						break;
 						case "select-one":
 							postdata[this.name]= $("option:selected",this).val();
-							extpost[this.name]= $("option:selected",this).text();
 						break;
 						case "select-multiple":
 							postdata[this.name]= $(this).val();
@@ -417,7 +416,6 @@ $.jgrid.extend({
 									selectedText[i] = $(selected).text();
 								}
 							);
-							extpost[this.name]= selectedText.join(",");
 						break;
 						case "password":
 						case "text":
@@ -475,8 +473,8 @@ $.jgrid.extend({
 						if(!this.edittype) {this.edittype = "text";}
 						if($t.p.autoencode) {tmp = $.jgrid.htmlDecode(tmp);}
 						elc = $.jgrid.createEl.call($t,this.edittype,opt,tmp,false,$.extend({},$.jgrid.ajaxOptions,obj.p.ajaxSelectOptions || {}));
-						if(tmp === "" && this.edittype == "checkbox") {tmp = $(elc).attr("offval");}
-						if(tmp === "" && this.edittype == "select") {tmp = $("option:eq(0)",elc).text();}
+						//if(tmp === "" && this.edittype == "checkbox") {tmp = $(elc).attr("offval");}
+						//if(tmp === "" && this.edittype == "select") {tmp = $("option:eq(0)",elc).text();}
 						if(rp_ge[$t.p.id].checkOnSubmit || rp_ge[$t.p.id].checkOnUpdate) {rp_ge[$t.p.id]._savedData[nm] = tmp;}
 						$(elc).addClass("FormElement");
 						if( $.inArray(this.edittype, ['text','textarea','password','select']) > -1) {
@@ -527,7 +525,7 @@ $.jgrid.extend({
 								vl = $.isFunction(opt.defaultValue) ? opt.defaultValue.call($t) : opt.defaultValue;
 								if(fld[0].type=='checkbox') {
 									vlc = vl.toLowerCase();
-									if(vlc.search(/(false|0|no|off|undefined)/i)<0 && vlc!=="") {
+									if(vlc.search(/(false|f|0|no|n|off|undefined)/i)<0 && vlc!=="") {
 										fld[0].checked = true;
 										fld[0].defaultChecked = true;
 										fld[0].value = vl;
@@ -602,15 +600,13 @@ $.jgrid.extend({
 								if(cm[i].editoptions && cm[i].editoptions.value) {
 									var cb = cm[i].editoptions.value.split(":");
 									if(cb[0] == tmp) {
-										$("#"+nm,"#"+fmid)[$t.p.useProp ? 'prop': 'attr']("checked",true);
-										$("#"+nm,"#"+fmid)[$t.p.useProp ? 'prop': 'attr']("defaultChecked",true); //ie
+										$("#"+nm,"#"+fmid)[$t.p.useProp ? 'prop': 'attr']({"checked":true, "defaultChecked" : true});
 									} else {
-										$("#"+nm,"#"+fmid)[$t.p.useProp ? 'prop': 'attr']("checked", false);
-										$("#"+nm,"#"+fmid)[$t.p.useProp ? 'prop': 'attr']("defaultChecked", false); //ie
+										$("#"+nm,"#"+fmid)[$t.p.useProp ? 'prop': 'attr']({"checked":false, "defaultChecked" : false});
 									}
 								} else {
 									tmp = tmp.toLowerCase();
-									if(tmp.search(/(false|0|no|off|undefined)/i)<0 && tmp!=="") {
+									if(tmp.search(/(false|f|0|no|n|off|undefined)/i)<0 && tmp!=="") {
 										$("#"+nm,"#"+fmid)[$t.p.useProp ? 'prop': 'attr']("checked",true);
 										$("#"+nm,"#"+fmid)[$t.p.useProp ? 'prop': 'attr']("defaultChecked",true); //ie
 									} else {
@@ -738,13 +734,6 @@ $.jgrid.extend({
 								$("#FormError>td",frmtb).html(ret[1]);
 								$("#FormError",frmtb).show();
 							} else {
-								// remove some values if formattaer select or checkbox
-								$.each($t.p.colModel, function(){
-									if(extpost[this.name] && this.formatter && this.formatter=='select') {
-										try {delete extpost[this.name];} catch (e) {}
-									}
-								});
-								postdata = $.extend(postdata,extpost);
 								if($t.p.autoencode) {
 									$.each(postdata,function(n,v){
 										postdata[n] = $.jgrid.htmlDecode(v);
@@ -876,10 +865,9 @@ $.jgrid.extend({
 				var stat = true;
 				$("#FormError",frmtb).hide();
 				if(rp_ge[$t.p.id].checkOnUpdate) {
-					postdata = {};extpost={};
+					postdata = {};
 					getFormData();
-					newData = $.extend({},postdata,extpost);
-					diff = compareData(newData,rp_ge[$t.p.id]._savedData);
+					diff = compareData(postdata,rp_ge[$t.p.id]._savedData);
 					if(diff) {
 						$("#"+frmgr).data("disabled",true);
 						$(".confirm","#"+IDs.themodal).show();
@@ -1110,7 +1098,7 @@ $.jgrid.extend({
 					$("#nNew","#"+$.jgrid.jqID(IDs.themodal)).click(function(){
 						$(".confirm","#"+$.jgrid.jqID(IDs.themodal)).hide();
 						$("#"+frmgr).data("disabled",false);
-						setTimeout(function(){$(":input","#"+frmgr)[0].focus();},0);
+						setTimeout(function(){$(":input:visible","#"+frmgr)[0].focus();},0);
 						return false;
 					});
 					$("#cNew","#"+$.jgrid.jqID(IDs.themodal)).click(function(){
@@ -1142,7 +1130,7 @@ $.jgrid.extend({
 					function(){$(this).removeClass('ui-state-hover');}
 				);
 				$("#sData", frmtb+"_2").click(function(){
-					postdata = {};extpost={};
+					postdata = {};
 					$("#FormError",frmtb).hide();
 					// all depend on ret array
 					//ret[0] - succes
@@ -1151,8 +1139,7 @@ $.jgrid.extend({
 					getFormData();
 					if(postdata[$t.p.id+"_id"] == "_empty")	{postIt();}
 					else if(p.checkOnSubmit===true ) {
-						newData = $.extend({},postdata,extpost);
-						diff = compareData(newData,rp_ge[$t.p.id]._savedData);
+						diff = compareData(postdata,rp_ge[$t.p.id]._savedData);
 						if(diff) {
 							$("#"+frmgr).data("disabled",true);
 							$(".confirm","#"+$.jgrid.jqID(IDs.themodal)).show();
